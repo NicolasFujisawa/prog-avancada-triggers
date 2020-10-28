@@ -17,7 +17,7 @@ create table EMPLOYEES(
 create table AUDIT_INFO(
     AUD NUMBER(6) NOT NULL,
     AUD_DATA DATE,
-    AUD_USER NUMBER(6)
+    AUD_USER VARCHAR(40)
 );
 
 create table AUDIT_TIPO(
@@ -50,46 +50,50 @@ create table EMPLOYEE_AUD(
 	DEPARTMENT_ID NUMBER(4)
 );
 
+CREATE SEQUENCE aud_id_seq START WITH 0 INCREMENT BY 1;
+
 
 create or replace trigger AUDIT_EMPLOYEES
 after insert or update or delete on EMPLOYEES
 for each row
-referencing old as antigo new as novo
 declare
-	novo_id = id_seq.nextval;
+	novo_id NUMBER;
 begin
-
+	novo_id := aud_id_seq.nextval;
 	insert into AUDIT_INFO values (novo_id, sysdate, user);
 
     /*Se está inserindo grava os nomes*/
     if (INSERTING) then -- inserindo
     	/* inserindo apenas os NOVOS valores na table, TIPO do ddl, AUD id do */
-        insert into EMPLOYEE_AUD values (novo_id, 0, :novo.EMPLOYEE_ID, :novo.FIRST_NAME, 
-        		:novo.LAST_NAME, :novo.EMAIL, :novo.PHONE_NUMBER,
-        		:novo.HIRE_DATE, :novo.JOB_ID, :novo.SALARY, 
-        		:novo.COMMISSION_PCT , :novo.MANAGER_ID , :novo.DEPARTMENT_ID);
-
-  
+        insert into EMPLOYEE_AUD (AUD, AUDIT_TIPO, EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB_ID, SALARY, MANAGER_ID, DEPARTMENT_ID)
+        	values (novo_id, 0, :new.EMPLOYEE_ID, :new.FIRST_NAME, 
+        		:new.LAST_NAME, :new.EMAIL, :new.PHONE_NUMBER,
+        		:new.HIRE_DATE, :new.JOB_ID, :new.SALARY, 
+        		:new.MANAGER_ID , :new.DEPARTMENT_ID);  
     end if;
 
-    /*atulizando registra os nome antigos e os novos*/
+    /*atulizando registra os nomes olds e os novos*/
     if (UPDATING) then -- atualizando
-        insert into EMPLOYEE_AUD values (novo_id, 1, :antigo.EMPLOYEE_ID, :antigo.FIRST_NAME, 
-        		:antigo.LAST_NAME, :antigo.EMAIL, :antigo.PHONE_NUMBER,
-        		:antigo.HIRE_DATE, :antigo.JOB_ID, :antigo.SALARY, 
-        		:antigo.COMMISSION_PCT , :antigo.MANAGER_ID , :antigo.DEPARTMENT_ID);
+        insert into EMPLOYEE_AUD (AUD, AUDIT_TIPO, EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB_ID, SALARY, MANAGER_ID, DEPARTMENT_ID)
+        	values (novo_id, 1, :old.EMPLOYEE_ID, :old.FIRST_NAME, 
+        		:old.LAST_NAME, :old.EMAIL, :old.PHONE_NUMBER,
+        		:old.HIRE_DATE, :old.JOB_ID, :old.SALARY,
+        		:old.MANAGER_ID, :old.DEPARTMENT_ID);
 
-        insert into EMPLOYEE_AUD values (novo_id, 2, :novo.EMPLOYEE_ID, :novo.FIRST_NAME, 
-        		:novo.LAST_NAME, :novo.EMAIL, :novo.PHONE_NUMBER,
-        		:novo.HIRE_DATE, :novo.JOB_ID, :novo.SALARY, 
-        		:novo.COMMISSION_PCT , :novo.MANAGER_ID , :novo.DEPARTMENT_ID);
+        insert into EMPLOYEE_AUD (AUD, AUDIT_TIPO, EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB_ID, SALARY, MANAGER_ID, DEPARTMENT_ID)
+        	values (novo_id, 2, :new.EMPLOYEE_ID, :new.FIRST_NAME, 
+        		:new.LAST_NAME, :new.EMAIL, :new.PHONE_NUMBER,
+        		:new.HIRE_DATE, :new.JOB_ID, :new.SALARY, 
+        		:new.MANAGER_ID, :new.DEPARTMENT_ID);
+    end if;
 
     /*e deletando apenas o ultimo registro da linha*/
     if (DELETING) then -- deletando
-    	insert into EMPLOYEE_AUD values (novo_id, 3, :antigo.EMPLOYEE_ID, :antigo.FIRST_NAME, 
-        		:antigo.LAST_NAME, :antigo.EMAIL, :antigo.PHONE_NUMBER,
-        		:antigo.HIRE_DATE, :antigo.JOB_ID, :antigo.SALARY, 
-        		:antigo.COMMISSION_PCT , :antigo.MANAGER_ID , :antigo.DEPARTMENT_ID);
+    	insert into EMPLOYEE_AUD (AUD, AUDIT_TIPO, EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB_ID, SALARY, MANAGER_ID, DEPARTMENT_ID)
+    		values (novo_id, 3, :old.EMPLOYEE_ID, :old.FIRST_NAME, 
+        		:old.LAST_NAME, :old.EMAIL, :old.PHONE_NUMBER,
+        		:old.HIRE_DATE, :old.JOB_ID, :old.SALARY, 
+        		:old.MANAGER_ID, :old.DEPARTMENT_ID);
 
     end if;
 
